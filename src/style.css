@@ -1,0 +1,9 @@
+.actionTable{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 20px;
+}
+.actionTable svg{
+    cursor: pointer;
+}
