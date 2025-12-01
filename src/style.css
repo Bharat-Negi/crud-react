@@ -12,6 +12,5 @@
   height: 100%;
   position: fixed !important;
   align-items: center;
-  z-index: 2;
   pointer-events: auto !important;
 }
