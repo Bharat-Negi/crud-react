@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { MdDelete } from "react-icons/md";
 import { BiSolidEdit } from "react-icons/bi";
+import EmployeeModal from "./EmployeeModal";
+import { toast } from "react-toastify";
+import toastBox from "react-hot-toast";
 
-export default function EmployeeCurd() {
+export default function EmployeeCrud() {
   const [employee, setEmployee] = useState([]);
   const [emp, setEmp] = useState({
     EmployeeName: "",
@@ -12,7 +15,7 @@ export default function EmployeeCurd() {
     Salary: "",
   });
 
-  const [isEdit, setIsEdit] = useState(false); 
+  const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
 
   const API_URL = "http://localhost:5000/employees";
@@ -55,41 +58,75 @@ export default function EmployeeCurd() {
     try {
       if (isEdit) {
         await axios.put(`${API_URL}/${editId}`, emp);
-        alert("Employee Updated Successfully!");
+        toast.success("Employee Updated Successfully!");
       } else {
         await axios.post(API_URL, emp);
-        alert("Employee Added Successfully!");
+        toast.success("Employee Added Successfully!");
       }
 
       fetchEmployees();
-      document.getElementById("closeModal").click(); // close modal
+      document.getElementById("closeModal").click();
     } catch (error) {
       console.log("Save error:", error);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
+  const handleDelete = (id: number) => {
+    toastBox.custom(
+      (t) => (
+        <div
+          style={{
+            background: "#fff",
+            padding: "15px",
+            borderRadius: "10px",
+            boxShadow: "0px 2px 10px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h6>Are you sure?</h6>
+          <p>Do you really want to delete this employee?</p>
 
-    try {
-      await axios.delete(`${API_URL}/${id}`);
-      alert("Employee Deleted!");
-      fetchEmployees();
-    } catch (error) {
-      console.log("Delete error:", error);
-    }
+          <div className="d-flex justify-content-end mt-2">
+            <button
+              className="btn btn-secondary btn-sm me-2"
+              onClick={() => toastBox.remove(t.id)}
+            >
+              No
+            </button>
+
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={async () => {
+                try {
+                  await axios.delete(`${API_URL}/${id}`);
+                  toast.success("Employee Deleted!");
+                  fetchEmployees();
+                  toastBox.remove(t.id);
+                } catch (error) {
+                  toast.error("Error deleting employee");
+                }
+              }}
+            >
+              Yes
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: Infinity, // 🚫 disable auto close completely
+      }
+    );
   };
 
   return (
     <>
       <div className="container my-5">
-        <h2 className="text-center mb-2">Employee CRUD Application</h2>
+        <h2 className="text-center mb-3">Employee CRUD Application</h2>
 
-        <div className="text-center mb-2">
+        <div className="text-center mb-3">
           <button
             className="btn btn-primary"
             data-bs-toggle="modal"
-            data-bs-target="#exampleModal"
+            data-bs-target="#employeeModal"
             onClick={openAddModal}
           >
             Add New Employee
@@ -116,14 +153,14 @@ export default function EmployeeCurd() {
                   <td>{row.EmployeeName}</td>
                   <td>{row.MobileNumber}</td>
                   <td>{row.Department}</td>
-                  <td>{row.Salary}</td>
+                  <td>{Math.round(row.Salary)}</td>
 
                   <td>
                     <BiSolidEdit
                       className="mx-2"
                       style={{ cursor: "pointer" }}
                       data-bs-toggle="modal"
-                      data-bs-target="#exampleModal"
+                      data-bs-target="#employeeModal"
                       onClick={() => openEditModal(row)}
                     />
 
@@ -137,7 +174,9 @@ export default function EmployeeCurd() {
 
               {employee.length === 0 && (
                 <tr>
-                  <td className="text-center col-md-6">No Employees Found</td>
+                  <td className="text-center" colSpan="6">
+                    No Employees Found
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -145,86 +184,13 @@ export default function EmployeeCurd() {
         </div>
       </div>
 
-      {/* ============= MODAL =============== */}
-      <div
-        className="modal fade"
-        id="exampleModal"
-        tabIndex="-1"
-        aria-labelledby="exampleModalLabel"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h1 className="modal-title fs-5" id="exampleModalLabel">
-                {isEdit ? "Edit Employee" : "Add Employee"}
-              </h1>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-                id="closeModal"
-              ></button>
-            </div>
-
-            <div className="modal-body">
-              <input
-                type="text"
-                className="form-control mb-2"
-                placeholder="Employee Name"
-                value={emp.EmployeeName}
-                onChange={(e) =>
-                  setEmp({ ...emp, EmployeeName: e.target.value })
-                }
-              />
-
-              <input
-                type="text"
-                className="form-control mb-2"
-                placeholder="Mobile Number"
-                value={emp.MobileNumber}
-                onChange={(e) =>
-                  setEmp({ ...emp, MobileNumber: e.target.value })
-                }
-              />
-
-              <input
-                type="text"
-                className="form-control mb-2"
-                placeholder="Department"
-                value={emp.Department}
-                onChange={(e) =>
-                  setEmp({ ...emp, Department: e.target.value })
-                }
-              />
-
-              <input
-                type="number"
-                className="form-control mb-2"
-                placeholder="Salary"
-                value={emp.Salary}
-                onChange={(e) =>
-                  setEmp({ ...emp, Salary: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
-                Close
-              </button>
-              <button type="button" className="btn btn-primary" onClick={handleSave}>
-                {isEdit ? "Update" : "Save"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Modal Component */}
+      <EmployeeModal
+        isEdit={isEdit}
+        emp={emp}
+        setEmp={setEmp}
+        handleSave={handleSave}
+      />
     </>
   );
 }

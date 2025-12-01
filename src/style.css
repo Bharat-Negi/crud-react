@@ -7,3 +7,11 @@
 .actionTable svg{
     cursor: pointer;
 }
+[data-rht-toaster] > div{
+  background: rgba(0,0,0,0.5);
+  height: 100%;
+  position: fixed !important;
+  align-items: center;
+  z-index: 2;
+  pointer-events: auto !important;
+}
