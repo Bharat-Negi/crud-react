@@ -234,7 +234,7 @@ export default function EmployeeCrud() {
 
         {/* TABLE */}
         <div className="table-responsive">
-          <table className="table table-bordered">
+          <table className="table table-bordered tableDesign">
             <thead>
               <tr>
                 <th>#</th>
