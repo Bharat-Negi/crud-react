@@ -18,6 +18,9 @@ export default function EmployeeCrud() {
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
 
+  // 🔍 Search State
+  const [searchTerm, setSearchTerm] = useState("");
+
   const API_URL = "http://localhost:5000/employees";
 
   const fetchEmployees = async () => {
@@ -65,13 +68,34 @@ export default function EmployeeCrud() {
       }
 
       fetchEmployees();
-      document.getElementById("closeModal").click();
+
+      // Close modal
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("employeeModal")
+      );
+      modal?.hide();
     } catch (error) {
       console.log("Save error:", error);
+
+      if (
+        error.response?.data?.message &&
+        error.response.data.message.includes("Mobile number")
+      ) {
+        toast.error(error.response.data.message);
+      } else if (
+        error.response?.data?.message &&
+        error.response.data.message.includes("Duplicate entries")
+      ) {
+        toast.error(
+          `This number already exists: ${error.response.data.duplicates.join(", ")}`
+        );
+      } else {
+        toast.error("Something went wrong while saving employee.");
+      }
     }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id) => {
     toastBox.custom(
       (t) => (
         <div
@@ -111,11 +135,24 @@ export default function EmployeeCrud() {
           </div>
         </div>
       ),
-      {
-        duration: Infinity, // 🚫 disable auto close completely
-      }
+      { duration: Infinity }
     );
   };
+
+  // 🔍 Search Handler
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // 🔍 Filter Employees
+  const filteredEmployees = employee.filter((row) => {
+    return (
+      row.EmployeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.MobileNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.Department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(row.Salary).includes(searchTerm.toLowerCase())
+    );
+  });
 
   return (
     <>
@@ -133,6 +170,22 @@ export default function EmployeeCrud() {
           </button>
         </div>
 
+        {/* 🔍 Search Bar */}
+        <div className="row">
+          <div className="col-md-12">
+            <form className="d-flex justify-content-end mb-3">
+              <input
+                className="form-control me-2 w-auto"
+                type="search"
+                placeholder="Search by name"
+                aria-label="Search"
+                value={searchTerm}
+                onChange={handleSearch}
+              />
+            </form>
+          </div>
+        </div>
+
         <div className="table-responsive">
           <table className="table table-bordered">
             <thead>
@@ -147,7 +200,7 @@ export default function EmployeeCrud() {
             </thead>
 
             <tbody>
-              {employee.map((row, index) => (
+              {filteredEmployees.map((row, index) => (
                 <tr key={row.EmployeeID}>
                   <td>{index + 1}</td>
                   <td>{row.EmployeeName}</td>
@@ -172,7 +225,7 @@ export default function EmployeeCrud() {
                 </tr>
               ))}
 
-              {employee.length === 0 && (
+              {filteredEmployees.length === 0 && (
                 <tr>
                   <td className="text-center" colSpan="6">
                     No Employees Found
@@ -190,6 +243,7 @@ export default function EmployeeCrud() {
         emp={emp}
         setEmp={setEmp}
         handleSave={handleSave}
+        apiUrl={API_URL}
       />
     </>
   );
