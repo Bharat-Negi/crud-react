@@ -18,8 +18,16 @@ export default function EmployeeCrud() {
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  // 🔍 Search State
+  // 🔍 Search
   const [searchTerm, setSearchTerm] = useState("");
+
+  // ⬆⬇ Sorting
+  const [sortColumn, setSortColumn] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc"); // asc | desc
+
+  // 🔢 Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 5;
 
   const API_URL = "http://localhost:5000/employees";
 
@@ -69,29 +77,13 @@ export default function EmployeeCrud() {
 
       fetchEmployees();
 
-      // Close modal
       const modal = bootstrap.Modal.getInstance(
         document.getElementById("employeeModal")
       );
       modal?.hide();
     } catch (error) {
       console.log("Save error:", error);
-
-      if (
-        error.response?.data?.message &&
-        error.response.data.message.includes("Mobile number")
-      ) {
-        toast.error(error.response.data.message);
-      } else if (
-        error.response?.data?.message &&
-        error.response.data.message.includes("Duplicate entries")
-      ) {
-        toast.error(
-          `This number already exists: ${error.response.data.duplicates.join(", ")}`
-        );
-      } else {
-        toast.error("Something went wrong while saving employee.");
-      }
+      toast.error("Error saving employee.");
     }
   };
 
@@ -139,12 +131,12 @@ export default function EmployeeCrud() {
     );
   };
 
-  // 🔍 Search Handler
+  // 🔍 Search
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+    setCurrentPage(1);
   };
 
-  // 🔍 Filter Employees
   const filteredEmployees = employee.filter((row) => {
     return (
       row.EmployeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -153,6 +145,57 @@ export default function EmployeeCrud() {
       String(row.Salary).includes(searchTerm.toLowerCase())
     );
   });
+
+  // ⬆⬇ SORT FUNCTION
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      // toggle asc ↔ desc
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortOrder("asc");
+    }
+  };
+
+  // Apply Sorting
+  const sortedEmployees = [...filteredEmployees].sort((a, b) => {
+    if (!sortColumn) return 0;
+
+    let x = a[sortColumn];
+    let y = b[sortColumn];
+
+    // Numeric sort for salary
+    if (sortColumn === "Salary") {
+      return sortOrder === "asc" ? x - y : y - x;
+    }
+
+    // String sort
+    x = x.toString().toLowerCase();
+    y = y.toString().toLowerCase();
+
+    if (x < y) return sortOrder === "asc" ? -1 : 1;
+    if (x > y) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // 📌 Pagination
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+
+  const currentRecords = sortedEmployees.slice(
+    indexOfFirstRecord,
+    indexOfLastRecord
+  );
+
+  const totalPages = Math.ceil(sortedEmployees.length / recordsPerPage);
+
+  const changePage = (page) => {
+    setCurrentPage(page);
+  };
+
+  // ⬆⬇ Arrow Icons
+  const arrow = (col) =>
+    sortColumn === col ? (sortOrder === "asc" ? "▲" : "▼") : "";
 
   return (
     <>
@@ -170,15 +213,14 @@ export default function EmployeeCrud() {
           </button>
         </div>
 
-        {/* 🔍 Search Bar */}
+        {/* 🔍 Search */}
         <div className="row">
           <div className="col-md-12">
             <form className="d-flex justify-content-end mb-3">
               <input
                 className="form-control me-2 w-auto"
                 type="search"
-                placeholder="Search by name"
-                aria-label="Search"
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={handleSearch}
               />
@@ -186,23 +228,37 @@ export default function EmployeeCrud() {
           </div>
         </div>
 
+        {/* TABLE */}
         <div className="table-responsive">
           <table className="table table-bordered">
             <thead>
               <tr>
                 <th>#</th>
-                <th>Employee Name</th>
-                <th>Mobile Number</th>
-                <th>Department</th>
-                <th>Salary</th>
+
+                <th onClick={() => handleSort("EmployeeName")} style={{ cursor: "pointer" }}>
+                  Employee Name {arrow("EmployeeName")}
+                </th>
+
+                <th onClick={() => handleSort("MobileNumber")} style={{ cursor: "pointer" }}>
+                  Mobile Number {arrow("MobileNumber")}
+                </th>
+
+                <th onClick={() => handleSort("Department")} style={{ cursor: "pointer" }}>
+                  Department {arrow("Department")}
+                </th>
+
+                <th onClick={() => handleSort("Salary")} style={{ cursor: "pointer" }}>
+                  Salary {arrow("Salary")}
+                </th>
+
                 <th>Action</th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredEmployees.map((row, index) => (
+              {currentRecords.map((row, index) => (
                 <tr key={row.EmployeeID}>
-                  <td>{index + 1}</td>
+                  <td>{indexOfFirstRecord + index + 1}</td>
                   <td>{row.EmployeeName}</td>
                   <td>{row.MobileNumber}</td>
                   <td>{row.Department}</td>
@@ -225,7 +281,7 @@ export default function EmployeeCrud() {
                 </tr>
               ))}
 
-              {filteredEmployees.length === 0 && (
+              {currentRecords.length === 0 && (
                 <tr>
                   <td className="text-center" colSpan="6">
                     No Employees Found
@@ -235,9 +291,37 @@ export default function EmployeeCrud() {
             </tbody>
           </table>
         </div>
+
+        {/* PAGINATION */}
+        <nav>
+          <ul className="pagination justify-content-center">
+            <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+              <button className="page-link" onClick={() => changePage(currentPage - 1)}>
+                Previous
+              </button>
+            </li>
+
+            {Array.from({ length: totalPages }, (_, i) => (
+              <li
+                key={i}
+                className={`page-item ${currentPage === i + 1 ? "active" : ""}`}
+              >
+                <button className="page-link" onClick={() => changePage(i + 1)}>
+                  {i + 1}
+                </button>
+              </li>
+            ))}
+
+            <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+              <button className="page-link" onClick={() => changePage(currentPage + 1)}>
+                Next
+              </button>
+            </li>
+          </ul>
+        </nav>
       </div>
 
-      {/* Modal Component */}
+      {/* Modal */}
       <EmployeeModal
         isEdit={isEdit}
         emp={emp}
