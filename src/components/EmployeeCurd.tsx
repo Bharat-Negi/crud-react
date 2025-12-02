@@ -27,14 +27,18 @@ export default function EmployeeCrud() {
 
   // 🔢 Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 5;
+  const recordsPerPage = 6;
 
   const API_URL = "http://localhost:5000/employees";
 
   const fetchEmployees = async () => {
     try {
       const response = await axios.get(API_URL);
-      setEmployee(response.data);
+
+      // 🔥 Sort so newest employee appears first
+      const sorted = response.data.sort((a, b) => b.EmployeeID - a.EmployeeID);
+
+      setEmployee(sorted);
     } catch (error) {
       console.log("Error fetching employees", error);
     }
@@ -235,19 +239,31 @@ export default function EmployeeCrud() {
               <tr>
                 <th>#</th>
 
-                <th onClick={() => handleSort("EmployeeName")} style={{ cursor: "pointer" }}>
+                <th
+                  onClick={() => handleSort("EmployeeName")}
+                  style={{ cursor: "pointer" }}
+                >
                   Employee Name {arrow("EmployeeName")}
                 </th>
 
-                <th onClick={() => handleSort("MobileNumber")} style={{ cursor: "pointer" }}>
+                <th
+                  onClick={() => handleSort("MobileNumber")}
+                  style={{ cursor: "pointer" }}
+                >
                   Mobile Number {arrow("MobileNumber")}
                 </th>
 
-                <th onClick={() => handleSort("Department")} style={{ cursor: "pointer" }}>
+                <th
+                  onClick={() => handleSort("Department")}
+                  style={{ cursor: "pointer" }}
+                >
                   Department {arrow("Department")}
                 </th>
 
-                <th onClick={() => handleSort("Salary")} style={{ cursor: "pointer" }}>
+                <th
+                  onClick={() => handleSort("Salary")}
+                  style={{ cursor: "pointer" }}
+                >
                   Salary {arrow("Salary")}
                 </th>
 
@@ -296,7 +312,10 @@ export default function EmployeeCrud() {
         <nav>
           <ul className="pagination justify-content-center">
             <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-              <button className="page-link" onClick={() => changePage(currentPage - 1)}>
+              <button
+                className="page-link"
+                onClick={() => changePage(currentPage - 1)}
+              >
                 Previous
               </button>
             </li>
@@ -312,8 +331,15 @@ export default function EmployeeCrud() {
               </li>
             ))}
 
-            <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
-              <button className="page-link" onClick={() => changePage(currentPage + 1)}>
+            <li
+              className={`page-item ${
+                currentPage === totalPages ? "disabled" : ""
+              }`}
+            >
+              <button
+                className="page-link"
+                onClick={() => changePage(currentPage + 1)}
+              >
                 Next
               </button>
             </li>
